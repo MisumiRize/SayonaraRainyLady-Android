@@ -5,23 +5,16 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.location.Location
 import android.os.Bundle
-import android.os.Handler
 import android.os.IBinder
 import android.util.Log
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks
-import com.google.android.gms.location.LocationListener
-import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import rx.Observable
-import rx.Observer
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
-import rx.subscriptions.Subscriptions
-import java.util.concurrent.TimeUnit
 
 class RainfallService : Service(), ConnectionCallbacks {
 
@@ -62,30 +55,8 @@ class RainfallService : Service(), ConnectionCallbacks {
     }
 
     override fun onConnected(bundle: Bundle?) {
-        Log.d(this.javaClass.name, "connected")
         subscription?.unsubscribe()
-        val locationRequest = LocationRequest.create();
-        locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-        locationRequest.interval = 5000
-        locationRequest.fastestInterval = 3000
-        val handler = Handler()
-        val period = 30L
-        val unit = TimeUnit.SECONDS
-        val observable = Observable.create { observer: Observer<in Location> ->
-            val listener = LocationListener {
-                observer.onNext(it)
-            }
-            handler.post {
-                LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, listener)
-            }
-            Subscriptions.create {
-                handler.post {
-                    LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, listener)
-                }
-            }
-        }.startWith(LocationServices.FusedLocationApi.getLastLocation(googleApiClient))
-        subscription = Observable.combineLatest(observable, Observable.interval(period, unit)) { loc, i -> loc }
-                .sample(period, unit)
+        subscription = IntervalLocationProvider.create(googleApiClient!!)
                 .flatMap { YahooWeatherClient.getWeather(it.latitude, it.longitude) }
                 .detectRainfall()
                 .timeInterval()

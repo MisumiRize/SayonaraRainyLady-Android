@@ -1,7 +1,6 @@
 package org.misumirize.sayonararainylady
 
 import android.Manifest
-import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.support.v7.app.AppCompatActivity
