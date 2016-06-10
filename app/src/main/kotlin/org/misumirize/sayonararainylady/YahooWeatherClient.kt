@@ -1,6 +1,8 @@
 package org.misumirize.sayonararainylady
 
 import com.google.gson.annotations.SerializedName
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -21,6 +23,17 @@ class YahooWeatherClient {
         }
 
         private fun buildService(baseUrl: String): YahooWeatherService {
+            val client = OkHttpClient()
+            client.interceptors().add(Interceptor {
+                val req = it.request()
+                val url = req.url()
+                        .newBuilder()
+                        .addQueryParameter("appid", BuildConfig.YAHOO_APP_ID)
+                        .addQueryParameter("output", "json")
+                        .build()
+                it.proceed(req.newBuilder().url(url).build())
+            })
+
             return Retrofit.Builder()
                     .baseUrl(baseUrl)
                     .addConverterFactory(GsonConverterFactory.create())
@@ -35,7 +48,7 @@ class YahooWeatherClient {
     }
 
     interface YahooWeatherService {
-        @GET("place?appid=dj0zaiZpPWdhamdRSDNONjlhbiZzPWNvbnN1bWVyc2VjcmV0Jng9N2U-&output=json")
+        @GET("place")
         fun getWeather(@Query("coordinates") coordinates: String): Observable<WeatherResponse>
     }
 
