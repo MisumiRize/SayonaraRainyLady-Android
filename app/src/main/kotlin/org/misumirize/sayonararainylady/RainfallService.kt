@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.os.Binder
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
@@ -21,13 +22,12 @@ import java.util.concurrent.TimeUnit
 
 class RainfallService : Service(), ConnectionCallbacks {
 
+    class LocalBinder(val service: RainfallService) : Binder()
+
+    private val binder = LocalBinder(this)
     private var googleApiClient: GoogleApiClient? = null
     private var notificationManager: NotificationManager? = null
     private var subscription: Subscription? = null
-
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
-    }
 
     override fun onCreate() {
         super.onCreate()
@@ -41,8 +41,11 @@ class RainfallService : Service(), ConnectionCallbacks {
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     }
 
+    override fun onBind(intent: Intent?): IBinder? {
+        return binder
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
         googleApiClient?.connect()
         startForeground(0, Notification())
         return START_STICKY
@@ -73,20 +76,24 @@ class RainfallService : Service(), ConnectionCallbacks {
                 .subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
-                    val i = Intent(this, MainActivity::class.java)
-                    val p = PendingIntent.getActivity(this, 0, i, PendingIntent.FLAG_UPDATE_CURRENT)
-                    val notification = Notification.Builder(this)
-                            .setContentTitle("foo")
-                            .setContentText("bar")
-                            .setSmallIcon(R.mipmap.ic_launcher)
-                            .setContentIntent(p)
-                            .setAutoCancel(true)
-                            .build()
-                    notificationManager?.notify(0, notification)
+                    onRainfall()
                 }
     }
 
     override fun onConnectionSuspended(i: Int) {
+    }
+
+    fun onRainfall() {
+        val i = Intent(this, MainActivity::class.java)
+        val p = PendingIntent.getActivity(this, 0, i, PendingIntent.FLAG_UPDATE_CURRENT)
+        val notification = Notification.Builder(this)
+                .setContentTitle("foo")
+                .setContentText("bar")
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentIntent(p)
+                .setAutoCancel(true)
+                .build()
+        notificationManager?.notify(0, notification)
     }
 }
 
