@@ -3,11 +3,13 @@ package org.misumirize.sayonararainylady
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
+import rx.Observable
 import rx.observers.TestSubscriber
 
-class RainfallServiceTest {
+class YahooWeatherClientTest {
 
     var server: MockWebServer? = null
 
@@ -24,7 +26,7 @@ class RainfallServiceTest {
     }
 
     @Test
-    fun foo() {
+    fun testDetectingRainfallFound() {
         server!!.enqueue(
                 MockResponse().setResponseCode(200).setBody("""
 {
@@ -57,15 +59,15 @@ class RainfallServiceTest {
                         {
                             "Type": "forecast",
                             "Date": "201606082120",
-                            "Rainfall": 0
-                        },
-                        {
-                            "Type": "forecast",
-                            "Date": "201606082130",
                             "Rainfall": 0.25
                         },
                         {
                             "Type": "forecast",
+                            "Date": "201606082130",
+                            "Rainfall": 0
+                        },
+                        {
+                            "Type": "forecast",
                             "Date": "201606082140",
                             "Rainfall": 0
                         },
@@ -92,16 +94,18 @@ class RainfallServiceTest {
 }
                 """)
         )
-        val s = TestSubscriber<YahooWeatherClient.WeatherResponse>()
-        YahooWeatherClient.getWeather(35.663613, 139.732293)
-                .detectRainfall()
-                .subscribe(s)
+        val s = TestSubscriber<YahooWeatherResponse>()
+        YahooWeatherProvider.fetchFromYahooWeather(
+                Observable.from(
+                        arrayOf(YahooWeatherRequest(35.663613, 139.732293))
+                )
+        ).toBlocking().subscribe(s)
         s.assertNoErrors()
-        assert(s.onNextEvents.size == 1)
+        Assert.assertEquals(s.onNextEvents.size, 1)
     }
 
     @Test
-    fun bar() {
+    fun testDetectingRainfallNotFound() {
         server!!.enqueue(
                 MockResponse().setResponseCode(200).setBody("""
 {
@@ -169,11 +173,14 @@ class RainfallServiceTest {
 }
                 """)
         )
-        val s = TestSubscriber<YahooWeatherClient.WeatherResponse>()
-        YahooWeatherClient.getWeather(35.663613, 139.732293)
-                .detectRainfall()
-                .subscribe(s)
-        s.assertNoValues()
+        val s = TestSubscriber<YahooWeatherResponse>()
+        YahooWeatherProvider.fetchFromYahooWeather(
+                Observable.from(
+                        arrayOf(YahooWeatherRequest(35.663613, 139.732293))
+                )
+        ).toBlocking().subscribe(s)
+        s.assertNoErrors()
+        Assert.assertEquals(s.onNextEvents.size, 0)
     }
 }
 

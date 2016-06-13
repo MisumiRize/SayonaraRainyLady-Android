@@ -18,10 +18,10 @@ android {
     }
     buildTypes {
         debug {
-            buildConfigField 'String', 'YAHOO_APP_ID', p.getProperty('yahooAppId')
+            buildConfigField 'String', 'YAHOO_APP_ID', "\"${p.getProperty('yahooAppId')}\""
         }
         release {
-            buildConfigField 'String', 'YAHOO_APP_ID', p.getProperty('yahooAppId')
+            buildConfigField 'String', 'YAHOO_APP_ID', "\"${p.getProperty('yahooAppId')}\""
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -43,6 +43,8 @@ dependencies {
     compile 'com.squareup.retrofit2:retrofit:2.0.2'
     compile 'com.squareup.retrofit2:converter-gson:2.0.2'
     compile 'com.squareup.retrofit2:adapter-rxjava:2.0.0'
+    compile 'com.squareup.okhttp3:logging-interceptor:3.2.0'
+    compile 'pl.charmas.android:android-reactive-location:0.9@aar'
     testCompile 'junit:junit:4.12'
     testCompile 'com.squareup.okhttp3:mockwebserver:3.2.0'
     androidTestCompile 'com.android.support:support-annotations:23.4.0'

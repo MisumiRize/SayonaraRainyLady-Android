@@ -10,11 +10,14 @@ import android.os.IBinder
 import android.util.Log
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks
+import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
+import pl.charmas.android.reactivelocation.ReactiveLocationProvider
 import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
+import java.util.concurrent.TimeUnit
 
 class RainfallService : Service(), ConnectionCallbacks {
 
@@ -46,7 +49,6 @@ class RainfallService : Service(), ConnectionCallbacks {
     }
 
     override fun onDestroy() {
-        Log.d(this.javaClass.name, "destroy")
         super.onDestroy()
         if (googleApiClient != null && googleApiClient!!.isConnected) {
             googleApiClient?.disconnect()
@@ -56,11 +58,18 @@ class RainfallService : Service(), ConnectionCallbacks {
 
     override fun onConnected(bundle: Bundle?) {
         subscription?.unsubscribe()
-        subscription = IntervalLocationProvider.create(googleApiClient!!)
-                .flatMap { YahooWeatherClient.getWeather(it.latitude, it.longitude) }
-                .detectRainfall()
-                .timeInterval()
-                .filter { it.intervalInMilliseconds >= 20 * 60 * 1000 }
+
+        val locationRequest = LocationRequest.create();
+        locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        locationRequest.interval = 5000
+        locationRequest.fastestInterval = 3000
+        LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, {})
+
+        subscription = YahooWeatherProvider.create(
+                Observable.interval(10, TimeUnit.MINUTES)
+                        .flatMap { ReactiveLocationProvider(this).lastKnownLocation }
+                        .map { YahooWeatherRequest(it.latitude, it.longitude) }
+        )
                 .subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
@@ -80,14 +89,4 @@ class RainfallService : Service(), ConnectionCallbacks {
     override fun onConnectionSuspended(i: Int) {
     }
 }
-
-fun Observable<YahooWeatherClient.WeatherResponse>.detectRainfall(): Observable<YahooWeatherClient.WeatherResponse> {
-    return this.filter {
-        val rainfalls = it.features[0].property.weather.rainfalls.sortedBy { it.toCalendar() }
-        val observation = rainfalls[0]
-        val forecast = rainfalls[2]
-        observation.value == 0f && forecast.value > 0f
-    }
-}
-
 
