@@ -8,6 +8,8 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v4.content.PermissionChecker
 import android.util.Log
+import android.widget.ArrayAdapter
+import android.widget.ListView
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks
 import com.google.android.gms.location.LocationListener
@@ -19,10 +21,15 @@ import rx.schedulers.Schedulers
 class MainActivity : AppCompatActivity(), ConnectionCallbacks, LocationListener {
 
     private var googleApiClient: GoogleApiClient? = null
+    private var adapter: ArrayAdapter<String>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, android.R.id.text1)
+        val listView = findViewById(R.id.rainfall_list) as ListView
+        listView.adapter = adapter
 
         googleApiClient = GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
@@ -86,6 +93,10 @@ class MainActivity : AppCompatActivity(), ConnectionCallbacks, LocationListener 
                     .subscribeOn(Schedulers.newThread())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe {
+                        adapter?.clear()
+                        adapter?.addAll(it.features.first().property.weather.rainfalls.map {
+                            "${it.date}: ${it.value}"
+                        })
                         LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this)
                     }
         }

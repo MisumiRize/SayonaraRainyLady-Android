@@ -1,7 +1,6 @@
 package org.misumirize.sayonararainylady
 
 import android.content.Intent
-import android.content.res.Resources
 import android.support.test.InstrumentationRegistry
 import android.support.test.rule.ServiceTestRule
 import android.support.test.runner.AndroidJUnit4
