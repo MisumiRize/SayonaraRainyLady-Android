@@ -90,6 +90,7 @@ class RainfallService : Service(), ConnectionCallbacks {
                 .setContentTitle(resources.getString(R.string.app_name))
                 .setContentText("It will rain within 10 minutes.")
                 .setSmallIcon(R.mipmap.ic_launcher)
+                .setVibrate(longArrayOf(100, 100, 100, 100, 100, 100))
                 .setContentIntent(p)
                 .setAutoCancel(true)
                 .build()
