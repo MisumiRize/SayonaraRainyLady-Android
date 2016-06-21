@@ -182,5 +182,34 @@ class YahooWeatherClientTest {
         s.assertNoErrors()
         Assert.assertEquals(s.onNextEvents.size, 0)
     }
+
+    @Test
+    fun testFilteringInvalidFeature() {
+        server!!.enqueue(
+                MockResponse().setResponseCode(200).setBody("""
+{
+    "ResultInfo": {
+        "Count": 1,
+        "Total": 1,
+        "Start": 1,
+        "Status": 200,
+        "Latency": 0.004519,
+        "Description": "",
+        "Copyright": "(C) Yahoo Japan Corporation."
+    },
+    "Feature": [
+    ]
+}
+                """)
+        )
+        val s = TestSubscriber<YahooWeatherResponse>()
+        YahooWeatherProvider.fetchFromYahooWeather(
+                Observable.from(
+                        arrayOf(YahooWeatherRequest(35.663613, 139.732293))
+                )
+        ).toBlocking().subscribe(s)
+        s.assertNoErrors()
+        Assert.assertEquals(s.onNextEvents.size, 0)
+    }
 }
 

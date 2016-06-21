@@ -19,11 +19,19 @@ class YahooWeatherProvider {
             return observable.flatMap {
                 YahooWeatherClient.getWeather(it.latitude, it.longitude)
                         .subscribeOn(Schedulers.newThread())
+                        .onErrorReturn {
+                            YahooWeatherResponse(emptyList())
+                        }
             }.filter {
-                val rainfalls = it.features[0].property.weather.rainfalls.sortedBy { it.toCalendar() }
-                val observation = rainfalls[0]
-                val forecast = rainfalls[1]
-                observation.value == 0f && forecast.value > 0f
+                val feature = it.features.firstOrNull()
+                if (feature == null) {
+                    false
+                } else {
+                    val rainfalls = feature.property.weather.rainfalls.sortedBy { it.toCalendar() }
+                    val observation = rainfalls[0]
+                    val forecast = rainfalls[1]
+                    observation.value == 0f && forecast.value > 0f
+                }
             }
         }
 

@@ -4,12 +4,13 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v4.content.PermissionChecker
+import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.ArrayAdapter
 import android.widget.ListView
+import android.widget.Toast
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks
 import com.google.android.gms.location.LocationListener
@@ -75,7 +76,7 @@ class MainActivity : AppCompatActivity(), ConnectionCallbacks, LocationListener 
         }
     }
 
-    override fun onConnected(p0: Bundle?) {
+    override fun onConnected(bundle: Bundle?) {
         val locationRequest = LocationRequest.create();
         locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         locationRequest.interval = 5000
@@ -92,11 +93,20 @@ class MainActivity : AppCompatActivity(), ConnectionCallbacks, LocationListener 
             YahooWeatherClient.getWeather(location.latitude, location.longitude)
                     .subscribeOn(Schedulers.newThread())
                     .observeOn(AndroidSchedulers.mainThread())
+                    .doOnError {
+                        Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
+                    }
+                    .onErrorReturn {
+                        YahooWeatherResponse(emptyList())
+                    }
                     .subscribe {
                         adapter?.clear()
-                        adapter?.addAll(it.features.first().property.weather.rainfalls.map {
-                            "${it.date}: ${it.value}"
-                        })
+                        val feature = it.features.firstOrNull()
+                        if (feature != null) {
+                            adapter?.addAll(feature.property.weather.rainfalls.map {
+                                "${it.date}: ${it.value}"
+                            })
+                        }
                         LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this)
                     }
         }
